@@ -6,7 +6,7 @@ import chalk from 'chalk'
 import { exportCsv, parseMasterConfig, readSoilData, saveSoilData } from './helpers/minter'
 import { uploadIpfs } from './command/upload'
 import { createCollection } from './helpers/nft'
-import { createCandyMachine } from './helpers/candy'
+import { createCandyMachine, extractSeed, setSeed } from './helpers/candy'
 
 require('dotenv').config()
 
@@ -25,6 +25,7 @@ program.command('create')
     .requiredOption('--denom <string>', 'denom')
     .requiredOption('--amount <number>', 'amount')
     .requiredOption('--creator <string>', 'creator address')
+    .option('--whitelist', 'enable whitelist')
     .action(async (directory, cmd) => {
         const {
             data,
@@ -32,7 +33,8 @@ program.command('create')
             network,
             denom,
             amount,
-            creator
+            creator,
+            whitelist
         } = cmd.opts()
         // read config file and nft address to initialize contract
         let soilData = readSoilData(data)
@@ -44,11 +46,42 @@ program.command('create')
             MNEMONIC,
             creator,
             denom,
-            amount)
-            console.log(`candy machine create: ${soilData.addresses['candy']}`)
+            amount,
+            whitelist)
+        console.log(`candy machine create: ${soilData.addresses['candy']}`)
+        // update seed
+        const seeds = extractSeed(instructions)
+        const txhash = await setSeed(soilData, seeds, network, MNEMONIC)
+        console.log(`update seed complete at txhash: ${txhash}`)
         // save config to file (update candy contract)
         const filename = saveSoilData(data, soilData)
         console.log(`Updated config file: ${filename}`)
+    })
+
+program.command('open')
+    .description('create candy manchine contract')
+    .requiredOption('-d, --data <string>', 'data path')
+    .requiredOption('-n, --network <string>', 'terra network: localterra/testnet/mainnet')
+    .action(async (directory, cmd) => {
+        const {
+            data,
+            network
+        } = cmd.opts()
+        // read config file and nft address to initialize contract
+        let soilData = readSoilData(data)
+    })
+
+program.command('close')
+    .description('create candy manchine contract')
+    .requiredOption('-d, --data <string>', 'data path')
+    .requiredOption('-n, --network <string>', 'terra network: localterra/testnet/mainnet')
+    .action(async (directory, cmd) => {
+        const {
+            data,
+            network
+        } = cmd.opts()
+        // read config file and nft address to initialize contract
+        let soilData = readSoilData(data)
     })
 
 program.parse()

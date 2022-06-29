@@ -44,18 +44,13 @@ export const parseMasterConfig = async (
           process.exit(-1)
         }
   
-        // Check owner exists
-        // if (record.owner != 'candy' && !AccAddress.validate(record.owner)) {
-        //     console.error(chalk.red(`Error: Owner address is invalid: ${record.owner}`))
-        //     process.exit(-1)
-        // }
-  
         instructions.push({
           tokenId: record.id,
           name: record.name,
           imageFilename: record.image_filename,
           metadataFilename: record.metadata_filename,
           owner: record.owner,
+          imageUri: record.ipfs
         } as Instruction)
       }
   
@@ -80,6 +75,55 @@ export const verifyMasterConfig = (
           process.exit(-1)
         }
     })
+}
+
+export const prepareMint = (
+    instructions: Instruction[],
+    data: SoilData,
+    metadataPath: string = ''
+) : Instruction[] => {
+    let mintInstructions = []
+    instructions.forEach( (inst, index) => {
+        // Check image file is ipfs path
+        if (!inst.imageUri) {
+          console.error(chalk.red(`Error: Image file not found nor an IPFS path at index: ${index} , tokenId: ${inst.tokenId}`))
+          process.exit(-1)
+        }
+        // Check image file is ipfs path otherwise file should exist
+        if (!inst.imageUri.startsWith('ipfs://')) {
+          console.error(chalk.red(`Error: Image file not found nor an IPFS path at index: ${index} , tokenId: ${inst.tokenId}`))
+          process.exit(-1)
+        }
+  
+        // Check metadata file exists
+        if (metadataPath != '' && inst.metadataFilename && !fs.existsSync(`${path.join(metadataPath, inst.metadataFilename)}`)) {
+          console.error(chalk.red(`Error: Metadata file not found at index: ${index} , tokenId: ${inst.tokenId}`))
+          process.exit(-1)
+        }
+
+        const mintInstruction = inst
+        // load metadata to instruction
+        if (metadataPath != '') {
+            const metadatas = JSON.parse(fs.readFileSync(path.join(metadataPath, inst.metadataFilename), 'utf-8').toString())
+            mintInstruction.description = metadatas.description || ''
+            mintInstruction.attributes = metadatas.attributes || []
+        }
+        
+        // load address
+        let owner
+        if (data.addresses[inst.owner]) {
+            owner = data.addresses[inst.owner]
+        } else {
+            owner = inst.owner
+        }
+        if (!AccAddress.validate(owner)) {
+            console.error(chalk.red(`Error: Owner address is invalid: ${owner}`))
+            process.exit(-1)
+        }
+        mintInstruction.owner = owner
+        mintInstructions.push(mintInstruction)
+    })
+    return mintInstructions
 }
 
 export const exportCsv = (

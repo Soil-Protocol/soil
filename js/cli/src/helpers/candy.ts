@@ -1,5 +1,6 @@
 import { SoilData } from '../interfaces/config'
 import { Instruction } from '../interfaces/instruction'
+import { Seed } from '../interfaces/seed'
 import chalk from 'chalk'
 import { create_wallet, execute, init, instantiate, upload } from './terra'
 import { AccAddress } from '@terra-money/terra.js'
@@ -70,4 +71,44 @@ export const createCandyMachine = async(
     data.codeIds['candy'] = codeId
     data.updatedAt = new Date()
     return data
+}
+
+export const extractSeed = (
+    instructions: Instruction[]
+) : Seed[] => {
+    let seedInstructions = instructions.filter(inst => inst.owner == 'candy')
+    const prefixCount = {}
+    seedInstructions.forEach(inst => {
+        let prefix = inst.tokenId[0]
+        if (!prefixCount[prefix]) {
+            prefixCount[prefix] = 1
+        } else {
+            prefixCount[prefix] += 1
+        }
+    })
+    const seeds = []
+    for (const [key, value] of Object.entries(prefixCount)) {
+        seeds.push({
+          prefix: key,
+          count: value
+        })
+      } 
+    return seeds
+}
+
+export const setSeed = async (
+    data: SoilData,
+    seeds: Seed[],
+    network: string,
+    mnemonic: string
+) : Promise<string> => {
+    const terra = instantiate(network)
+    const wallet = create_wallet(terra, mnemonic)
+    const candyAddress = data.addresses['candy']
+    const response = await execute(terra, wallet, candyAddress, {
+        set_random_seed: {
+            seeds
+        }
+    })
+    return response.txhash
 }

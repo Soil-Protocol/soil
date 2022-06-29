@@ -3,9 +3,9 @@ import {Presets, SingleBar} from 'cli-progress'
 import { delay } from './helpers/util'
 import prompts from 'prompts'
 import chalk from 'chalk'
-import { exportCsv, parseMasterConfig, saveSoilData, verifyMasterConfig } from './helpers/minter'
+import { exportCsv, parseMasterConfig, prepareMint, readSoilData, saveSoilData, verifyMasterConfig } from './helpers/minter'
 import { uploadIpfs } from './command/upload'
-import { createCollection } from './helpers/nft'
+import { bulkMint, createCollection } from './helpers/nft'
 
 require('dotenv').config()
 
@@ -58,6 +58,27 @@ program.command('create')
             const filename = saveSoilData(data, config)
             console.log(`Updated config file: ${filename}`)
         }
+    })
+
+program.command('mint')
+    .description('mint nft')
+    .requiredOption('-d, --data <string>', 'data path')
+    .requiredOption('-c, --config <string>', 'master config file')
+    .requiredOption('-n, --network <string>', 'terra network: localterra/testnet/mainnet')
+    .option('-m, --metadata <string>', 'metadata path')
+    .action(async (directory, cmd) => {
+        const {
+            data,
+            config,
+            network,
+            metadata
+        } = cmd.opts()
+        const soilData = readSoilData(data)
+        let instructions = await parseMasterConfig(config)
+        instructions = prepareMint(instructions, soilData, metadata)
+        // too lazy for progress bar now, will add later
+        await bulkMint(soilData, instructions, network, MNEMONIC)
+        console.log(`mint complete`)
     })
 
 program.parse()

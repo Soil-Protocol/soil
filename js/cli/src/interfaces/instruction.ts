@@ -5,4 +5,11 @@ export interface Instruction {
     metadataFilename: string | null,
     imageUri?: string,
     owner: string,
+    description?: string,
+    attributes?: Trait[]
+}
+
+export interface Trait {
+    trait_type: string,
+    value: string
 }

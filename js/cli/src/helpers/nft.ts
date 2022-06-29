@@ -1,6 +1,7 @@
 import { SoilData } from '../interfaces/config'
+import { Instruction } from '../interfaces/instruction'
 import { readSoilData } from './minter'
-import { create_wallet, execute, init, instantiate, upload } from './terra'
+import { batchExecute, create_wallet, execute, init, instantiate, upload } from './terra'
 
 const cw721_codeids = {
     'testnet': 1434,
@@ -35,4 +36,35 @@ export const createCollection = async(
     config.codeIds['collection'] = codeId
     config.updatedAt = new Date()
     return config
+}
+
+export const bulkMint = async(
+    data: SoilData,
+    instructions: Instruction[],
+    network: string,
+    mnemonic: string
+): Promise<void> => {
+    const terra = instantiate(network)
+    const wallet = create_wallet(terra, mnemonic)
+    const candyAddress = data.addresses['collection']
+    let mintInstructions = [...instructions]
+    while(mintInstructions.length > 0) {
+        let tempInstructions = mintInstructions.splice(0, 100)
+        let msgs = tempInstructions.map(inst => {
+            return {
+                mint: {
+                    token_id: inst.tokenId,
+                    owner: inst.owner,
+                    token_uri: '',
+                    extension: {
+                        image: inst.imageUri,
+                        description: inst.description,
+                        name: inst.name,
+                        attributes: inst.attributes
+                    }
+                }
+            }
+        })
+        await batchExecute(terra, wallet, candyAddress, msgs)
+    }
 }
