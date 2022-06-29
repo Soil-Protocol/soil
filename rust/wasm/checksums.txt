@@ -1,0 +1,2 @@
+8c2f7c422006fa0804789da6a3ecb9524cf127e4982d434b7129971cc2ad201d  soil_candy_manchine.wasm
+98cd151975f104f1b16ef42c1e117e455c9d794cc705a0aa177938cc9cf4adc1  cw721_metadata_onchain.wasm
