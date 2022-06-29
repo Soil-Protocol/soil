@@ -6,7 +6,7 @@ import { create_wallet, execute, init, instantiate, upload } from './terra'
 import { AccAddress } from '@terra-money/terra.js'
 
 const candy_codeids = {
-    'testnet': 0,
+    'testnet': 1490,
     'mainnet': 0
 }
 

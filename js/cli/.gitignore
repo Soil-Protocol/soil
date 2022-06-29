@@ -3,4 +3,5 @@ build
 output
 *.js
 .env
+.env.*
 data
