@@ -1,5 +1,5 @@
-import { SoilConfig } from '../interfaces/config'
-import { readSoilConfig } from './minter'
+import { SoilData } from '../interfaces/config'
+import { readSoilData } from './minter'
 import { create_wallet, execute, init, instantiate, upload } from './terra'
 
 const cw721_codeids = {
@@ -13,7 +13,7 @@ export const createCollection = async(
     network: string,
     mnemonic: string,
     output: string = ''
-) : Promise<SoilConfig> => {
+) : Promise<SoilData> => {
     const terra = instantiate(network)
     const wallet = create_wallet(terra, mnemonic)
     let codeId
@@ -28,9 +28,10 @@ export const createCollection = async(
         symbol,
         minter: wallet.key.accAddress
     }, 'soil cw721-metadata')
-    const config = readSoilConfig(output)
+    const config = readSoilData(output)
     config.network = network
     config.addresses['collection'] = initResponse.contract_addr
+    config.addresses['minter'] = wallet.key.accAddress
     config.codeIds['collection'] = codeId
     config.updatedAt = new Date()
     return config

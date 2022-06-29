@@ -5,12 +5,10 @@ import chalk from 'chalk'
 import parse from 'csv-parse'
 import { AccAddress } from '@terra-money/terra.js'
 import { Parser } from 'json2csv'
-import { SoilConfig } from '../interfaces/config'
+import { SoilData } from '../interfaces/config'
 
 export const parseMasterConfig = async (
-    configFile: string,
-    imagePath: string,
-    metadataPath: string = ''
+    configFile: string
 ) : Promise<Instruction[]> => {
     const instructions = []
 
@@ -46,18 +44,6 @@ export const parseMasterConfig = async (
           process.exit(-1)
         }
   
-        // Check image file is ipfs path otherwise file should exist
-        if (!record.ipfs.startsWith('ipfs://') && !fs.existsSync(`${imagePath}/${record.image_filename}`)) {
-          console.error(chalk.red(`Error: Image file not found nor an IPFS path: ${record.image_filename}`))
-          process.exit(-1)
-        }
-  
-        // Check metadata file exists
-        if (metadataPath != '' && record.metadata_filename && !fs.existsSync(`${metadataPath}/${record.metadata_filename}`)) {
-          console.error(chalk.red(`Error: Metadata file not found: ${record.metadata_filename}`))
-          process.exit(-1)
-        }
-  
         // Check owner exists
         // if (record.owner != 'candy' && !AccAddress.validate(record.owner)) {
         //     console.error(chalk.red(`Error: Owner address is invalid: ${record.owner}`))
@@ -74,6 +60,26 @@ export const parseMasterConfig = async (
       }
   
       return instructions
+}
+
+export const verifyMasterConfig = (
+    instructions: Instruction[],
+    imagePath: string,
+    metadataPath: string = ''
+) => {
+    instructions.forEach( (inst, index) => {
+        // Check image file is ipfs path otherwise file should exist
+        if (inst.imageUri && !inst.imageUri.startsWith('ipfs://') && !fs.existsSync(`${path.join(imagePath, inst.imageFilename)}`)) {
+          console.error(chalk.red(`Error: Image file not found nor an IPFS path at index: ${index} , tokenId: ${inst.tokenId}`))
+          process.exit(-1)
+        }
+  
+        // Check metadata file exists
+        if (metadataPath != '' && inst.metadataFilename && !fs.existsSync(`${path.join(metadataPath, inst.metadataFilename)}`)) {
+          console.error(chalk.red(`Error: Metadata file not found at index: ${index} , tokenId: ${inst.tokenId}`))
+          process.exit(-1)
+        }
+    })
 }
 
 export const exportCsv = (
@@ -117,10 +123,10 @@ export const exportCsv = (
     return outputFilename
 }
 
-export const readSoilConfig = (
+export const readSoilData = (
     outputPath: string
-) : SoilConfig => {
-    const configFilename = path.join(outputPath, 'config.json')
+) : SoilData => {
+    const configFilename = path.join(outputPath, 'data.json')
     if (!outputPath || !fs.existsSync(configFilename)) {
         return {
             addresses: {},
@@ -134,11 +140,11 @@ export const readSoilConfig = (
     return config
 }
 
-export const saveSoilConfig = (
+export const saveSoilData = (
     outputPath: string,
-    config: SoilConfig
+    config: SoilData
 ) : string => {
-    const filename = path.join(outputPath, 'config.json')
+    const filename = path.join(outputPath, 'data.json')
     fs.writeFileSync(filename, JSON.stringify(config, null, 2), 'utf-8')
     return filename
 }

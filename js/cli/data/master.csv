@@ -1,0 +1,11 @@
+id,name,image_filename,metadata_filename,ipfs,owner
+0,#0,0.png,0.json,ipfs://QmWHRdp9svU916CMBicNnFn8CZbYHKV5CK9fcrRteNVJMz,terra1x46rqay4d3cssq8gxxvqz8xt6nwlz4td20k38v
+1,#1,1.png,1.json,ipfs://QmPbrcMMpBpakVG58AiDwWJwEg1BhVNtQdwdvRQnECVbuJ,candy
+2,#2,2.png,2.json,ipfs://QmZq3PGviXGKExtmfpCbJPjG6KkraY9hSp6qq8GDU4rNvT,candy
+3,#3,3.png,3.json,ipfs://QmeD4Ef8dwhLdfKWLQWToDdjTa5oWefL3HtTCyQCmjnXn4,candy
+4,#4,4.png,4.json,ipfs://QmYzFZXcqLnRweEALxE4merT8HMqkYFCesxTG7tau7uS1T,candy
+5,#5,5.png,5.json,ipfs://QmWjb5seg4VfrZcDcjwRyqzkGmfpgsWmUCZPW1uCvLehnH,candy
+6,#6,6.png,6.json,ipfs://QmR6jzw3GHN8RQYLTz9igquwMrk8Rxrch6R7fRKFgpFLVm,candy
+7,#7,7.png,7.json,ipfs://QmT4q2aXUfFh9xvoPCy6X7npEs15Ei1mmdbLTCAVTsqL89,candy
+8,#8,8.png,8.json,ipfs://Qmf1rv2WN9Nw4FuSsZYZ3pchmXPSK8GsRX53QJYWJjCoef,candy
+9,#9,9.png,9.json,ipfs://QmVsudH4sHELLHfaw3mYsX55zMXa2vpPAEvPsdPAV9Kwfx,terra1x46rqay4d3cssq8gxxvqz8xt6nwlz4td20k38v

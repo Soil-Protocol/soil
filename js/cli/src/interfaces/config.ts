@@ -1,4 +1,4 @@
-export interface SoilConfig {
+export interface SoilData {
     network: string,
     addresses: Record<string,string>,
     codeIds: Record<string, number>,

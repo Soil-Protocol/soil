@@ -96,7 +96,7 @@ export const init = async (
             logs
         }
     } catch (err) {
-        console.log('err ', err)
+        console.log(err)
         throw err
     }
 };

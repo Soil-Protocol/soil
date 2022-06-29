@@ -3,7 +3,7 @@ import {Presets, SingleBar} from 'cli-progress'
 import { delay } from './helpers/util'
 import prompts from 'prompts'
 import chalk from 'chalk'
-import { exportCsv, parseMasterConfig, readSoilConfig, saveSoilConfig } from './helpers/minter'
+import { exportCsv, parseMasterConfig, saveSoilData, verifyMasterConfig } from './helpers/minter'
 import { uploadIpfs } from './command/upload'
 import { createCollection } from './helpers/nft'
 
@@ -18,23 +18,24 @@ program
 
 program.command('upload')
     .description('upload image file to ipfs')
-    .requiredOption('-o, --output <string>', 'output path')
+    .requiredOption('-d, --data <string>', 'data path')
     .requiredOption('-i, --image <string>', 'image path')
     .requiredOption('-c, --config <string>', 'master config file')
     .option('-m, --metadata <string>', 'metadata path')
     .action(async (directory, cmd) => {
         const {
-            output,
+            data,
             image,
             config,
             metadata
         } = cmd.opts()
         // parse image
-        const instructions = await parseMasterConfig(config, image, metadata)
+        const instructions = await parseMasterConfig(config)
+        verifyMasterConfig(instructions, image, metadata)
         // upload
         const uploadedInstructions = await uploadIpfs(instructions, image, PINATA_API_KEY, PINATA_SECRET_KEY)
         // save to output path
-        const outputFilename = exportCsv(uploadedInstructions, output)
+        const outputFilename = exportCsv(uploadedInstructions, data)
         console.log(`Updated config file: ${outputFilename}`)
     })
 
@@ -43,18 +44,18 @@ program.command('create')
     .requiredOption('-cn, --name <string>', 'collection name')
     .requiredOption('-cs, --symbol <string>', 'collection symbol')
     .requiredOption('-n, --network <string>', 'terra network: localterra/testnet/mainnet')
-    .option('-o, --output <string>', 'output path')
+    .option('-d, --data <string>', 'data path')
     .action(async (directory, cmd) => {
         const {
             name,
             symbol,
             network,
-            output
+            data
         } = cmd.opts()
-        const config = await createCollection(name, symbol, network, MNEMONIC, output)
+        const config = await createCollection(name, symbol, network, MNEMONIC, data)
         console.log(`collection create: ${config.addresses['collection']}`)
-        if (output) {
-            const filename = saveSoilConfig(output, config)
+        if (data) {
+            const filename = saveSoilData(data, config)
             console.log(`Updated config file: ${filename}`)
         }
     })

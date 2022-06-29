@@ -1,0 +1,14 @@
+{
+  "addresses": {
+    "collection": "terra14khjxsvmklm8kg97vhrn5wc2tz3w57na5seeke3qnwashe4pxd3qmljkek",
+    "minter": "terra1x46rqay4d3cssq8gxxvqz8xt6nwlz4td20k38v",
+    "candy": "terra1jz6zzx7zgrp5v2rmrgu7ef4hqurkuky5wc0spkyyjqm9u5kss3yq8c79h7"
+  },
+  "network": "localterra",
+  "codeIds": {
+    "collection": 11,
+    "candy": 15
+  },
+  "createdAt": "2022-06-29T20:09:12.005Z",
+  "updatedAt": "2022-06-29T20:55:26.651Z"
+}
