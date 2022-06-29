@@ -2,11 +2,7 @@ import {MsgStoreCode, LCDClient, MnemonicKey, MsgInstantiateContract, Coins, Msg
 import * as fs from 'fs'
 import { delay } from './util'
 
-require('dotenv').config()
-
 const DELAY_TIME = 2000 // this to prevent unauthorization error
-
-const {NETWORK} = process.env
 
 const networks = {
     localterra: {
@@ -26,16 +22,51 @@ const networks = {
     }
 }
 
-const terra = new LCDClient(networks[NETWORK])
+export const instantiate = (network) => {
+    return new LCDClient(networks[network])
+}
 
-export const create_wallet = (mnemonic) => {
+export const create_wallet = (terra, mnemonic) => {
     const key = new MnemonicKey({
         mnemonic
     })
     return terra.wallet(key)
 }
 
+export const upload = async (
+    terra,
+    wallet,
+    path,
+):Promise<Number> => { 
+    const tx = await wallet.createAndSignTx({
+        msgs: [
+            new MsgStoreCode(
+                wallet.key.accAddress,
+                fs.readFileSync(path, { encoding: 'base64'})
+            )
+        ]
+    })
+    try {
+        const response = await terra.tx.broadcast(tx);
+        const logs = JSON.parse(response.raw_log)
+        let code_id = ''
+        logs.forEach( (log) => {
+            log.events.forEach( (event) => {
+                if(event.type == 'store_code') {
+                    code_id = event.attributes.find( (attribute) => attribute.key == 'code_id').value
+                }
+            })
+        })
+        await delay(DELAY_TIME)
+        return Number(code_id)
+    } catch (err) {
+        console.log('err ', err)
+        throw err
+    }
+}
+
 export const init = async (
+    terra,
     wallet,
     code_id,
     init_msg,
@@ -71,6 +102,7 @@ export const init = async (
 };
 
 export const execute = async (
+    terra,
     wallet:Wallet,
     addr,
     execute_msg,
@@ -89,6 +121,7 @@ export const execute = async (
 }
 
 export const batchExecuteRaw = async (
+    terra,
     wallet:Wallet,
     msgs: MsgExecuteContract[],
 ) => {
@@ -101,6 +134,7 @@ export const batchExecuteRaw = async (
 }
 
 export const batchExecute = async (
+    terra,
     wallet:Wallet,
     addr,
     execute_msgs,
@@ -120,57 +154,12 @@ export const batchExecute = async (
     return response;
 }
 
-export const migrate = async (
-    wallet,
-    addr,
-    code_id,
-    migrate_msg
-) => {
-    const tx = await wallet.createAndSignTx({
-        msgs: [new MsgMigrateContract(wallet.key.accAddress, addr, code_id, migrate_msg)]
-    });
-    try {
-        const response = await terra.tx.broadcast(tx)
-        await delay(DELAY_TIME)
-        return response
-    } catch (err) {
-        throw err
-    }
-}
-
-export const transfer = async (wallet:Wallet, addr, coins) => {
-    const tx = await wallet.createAndSignTx({
-        msgs: [new MsgSend(
-            wallet.key.accAddress,
-            addr,
-            Coins.fromString(coins)
-        )]
-    })
-    const response = await terra.tx.broadcast(tx)
-    await delay(DELAY_TIME)
-    return response;
-}
-
-export const balance = async (addr) => {
-    return await terra.bank.balance(addr)
-}
-
-export const query = async (addr, msg) => {
+export const query = async (terra, addr, msg) => {
     const response = await terra.wasm.contractQuery(addr,msg)
     return response
 }
 
-export const queryAtHeight = async (addr, msg, height) => {
+export const queryAtHeight = async (terra, addr, msg, height) => {
     const response = await terra.wasm.contractQuery(addr,msg, { height })
-    return response
-}
-
-export const codeInfo = async (codeId:number) => {
-    const response = await terra.wasm.codeInfo(codeId)
-    return response
-}
-
-export const contractInfo = async (addr: string) => {
-    const response = await terra.wasm.contractInfo(addr)
     return response
 }

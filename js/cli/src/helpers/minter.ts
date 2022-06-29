@@ -5,6 +5,7 @@ import chalk from 'chalk'
 import parse from 'csv-parse'
 import { AccAddress } from '@terra-money/terra.js'
 import { Parser } from 'json2csv'
+import { SoilConfig } from '../interfaces/config'
 
 export const parseMasterConfig = async (
     configFile: string,
@@ -58,10 +59,10 @@ export const parseMasterConfig = async (
         }
   
         // Check owner exists
-        if (record.owner != 'candy' && !AccAddress.validate(record.owner)) {
-            console.error(chalk.red(`Error: Owner address is invalid: ${record.owner}`))
-            process.exit(-1)
-        }
+        // if (record.owner != 'candy' && !AccAddress.validate(record.owner)) {
+        //     console.error(chalk.red(`Error: Owner address is invalid: ${record.owner}`))
+        //     process.exit(-1)
+        // }
   
         instructions.push({
           tokenId: record.id,
@@ -114,4 +115,30 @@ export const exportCsv = (
     const outputFilename = path.join(outputPath, 'master.csv')
     fs.writeFileSync(outputFilename, configCsv)
     return outputFilename
+}
+
+export const readSoilConfig = (
+    outputPath: string
+) : SoilConfig => {
+    const configFilename = path.join(outputPath, 'config.json')
+    if (!outputPath || !fs.existsSync(configFilename)) {
+        return {
+            addresses: {},
+            network: 'localterra',
+            codeIds: {},
+            createdAt: new Date(),
+            updatedAt: new Date()
+        }
+    }
+    const config = JSON.parse(fs.readFileSync(configFilename, 'utf-8').toString())
+    return config
+}
+
+export const saveSoilConfig = (
+    outputPath: string,
+    config: SoilConfig
+) : string => {
+    const filename = path.join(outputPath, 'config.json')
+    fs.writeFileSync(filename, JSON.stringify(config, null, 2), 'utf-8')
+    return filename
 }
