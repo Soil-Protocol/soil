@@ -6,7 +6,7 @@ import chalk from 'chalk'
 import { exportCsv, parseMasterConfig, readSoilData, saveSoilData } from './helpers/minter'
 import { uploadIpfs } from './command/upload'
 import { createCollection } from './helpers/nft'
-import { createCandyMachine, extractSeed, setSeed } from './helpers/candy'
+import { createCandyMachine, extractSeed, info, setSeed } from './helpers/candy'
 
 require('dotenv').config()
 
@@ -56,6 +56,46 @@ program.command('create')
         // save config to file (update candy contract)
         const filename = saveSoilData(data, soilData)
         console.log(`Updated config file: ${filename}`)
+    })
+
+program.command('info')
+    .description('get info on deployed candy machine')
+    .requiredOption('-d, --data <string>', 'data path')
+    .requiredOption('-n, --network <string>', 'terra network: localterra/testnet/mainnet')
+    .action(async (directory, cmd) => {
+        const {
+            data,
+            network
+        } = cmd.opts()
+        // read config file and nft address to initialize contract
+        let soilData = readSoilData(data)
+    })
+
+program.command('set-round')
+    .description('set whitelist on round')
+    .requiredOption('-d, --data <string>', 'data path')
+    .requiredOption('-n, --network <string>', 'terra network: localterra/testnet/mainnet')
+    .action(async (directory, cmd) => {
+        const {
+            data,
+            network
+        } = cmd.opts()
+        // read config file and nft address to initialize contract
+        let soilData = readSoilData(data)
+    })
+
+program.command('set-whitelist')
+    .description('set whitelist on round')
+    .requiredOption('-d, --data <string>', 'data path')
+    .requiredOption('-n, --network <string>', 'terra network: localterra/testnet/mainnet')
+    .action(async (directory, cmd) => {
+        const {
+            data,
+            network
+        } = cmd.opts()
+        // read config file and nft address to initialize contract
+        let soilData = readSoilData(data)
+
     })
 
 program.command('open')

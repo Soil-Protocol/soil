@@ -1,4 +1,4 @@
-import { Instruction } from '../interfaces/instruction'
+import { Instruction, NftTx } from '../interfaces/instruction'
 import fs from 'fs'
 import path from 'path'
 import chalk from 'chalk'
@@ -6,6 +6,7 @@ import parse from 'csv-parse'
 import { AccAddress } from '@terra-money/terra.js'
 import { Parser } from 'json2csv'
 import { SoilData } from '../interfaces/config'
+import { mintNfts } from '../command/mint'
 
 export const parseMasterConfig = async (
     configFile: string
@@ -80,10 +81,16 @@ export const verifyMasterConfig = (
 export const prepareMint = (
     instructions: Instruction[],
     data: SoilData,
-    metadataPath: string = ''
+    metadataPath: string = '',
+    nfts: NftTx[]
 ) : Instruction[] => {
+    // filter minted instruction
+    let mintedNftSet = new Set<string>()
+    nfts.forEach(n => mintedNftSet.add(n.tokenId))
+    let tempInsturctions = instructions.filter(inst => !mintedNftSet.has(inst.tokenId))
+    //
     let mintInstructions = []
-    instructions.forEach( (inst, index) => {
+    tempInsturctions.forEach( (inst, index) => {
         // Check image file is ipfs path
         if (!inst.imageUri) {
           console.error(chalk.red(`Error: Image file not found nor an IPFS path at index: ${index} , tokenId: ${inst.tokenId}`))
@@ -190,5 +197,46 @@ export const saveSoilData = (
 ) : string => {
     const filename = path.join(outputPath, 'data.json')
     fs.writeFileSync(filename, JSON.stringify(config, null, 2), 'utf-8')
+    return filename
+}
+
+export const readNftTxData = async (
+    outputPath: string
+): Promise<NftTx[]> => {
+    let nfts = []
+    const nftTxFilename = path.join(outputPath, 'nft_tx.csv')
+    if (!outputPath || !fs.existsSync(nftTxFilename)) {
+        return []
+    }
+
+    const parser = fs
+      .createReadStream(nftTxFilename)
+      .pipe(parse({
+        columns: true
+      }))
+
+    for await (const record of parser) {
+        nfts.push({
+            ...record
+          } as NftTx)
+    }
+    return nfts
+}
+
+export const saveNftTxData = (
+    outputPath: string,
+    nfts: NftTx[]
+): string => {
+    if (nfts.length <= 0) {
+        return
+    }
+    const filename = path.join(outputPath, 'nft_tx.csv')
+    const fields = Object.keys(nfts[0])
+    const parser = new Parser({
+        fields,
+        quote: ''
+    })
+    const nftTxCsv = parser.parse(nfts)
+    fs.writeFileSync(filename, nftTxCsv, 'utf-8')
     return filename
 }

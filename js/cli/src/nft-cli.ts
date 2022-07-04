@@ -3,9 +3,10 @@ import {Presets, SingleBar} from 'cli-progress'
 import { delay } from './helpers/util'
 import prompts from 'prompts'
 import chalk from 'chalk'
-import { exportCsv, parseMasterConfig, prepareMint, readSoilData, saveSoilData, verifyMasterConfig } from './helpers/minter'
+import { exportCsv, parseMasterConfig, prepareMint, readNftTxData, readSoilData, saveNftTxData, saveSoilData, verifyMasterConfig } from './helpers/minter'
 import { uploadIpfs } from './command/upload'
-import { bulkMint, createCollection } from './helpers/nft'
+import { createCollection } from './helpers/nft'
+import { mintNfts } from './command/mint'
 
 require('dotenv').config()
 
@@ -74,11 +75,12 @@ program.command('mint')
             metadata
         } = cmd.opts()
         const soilData = readSoilData(data)
+        let nfts = await readNftTxData(data)
         let instructions = await parseMasterConfig(config)
-        instructions = prepareMint(instructions, soilData, metadata)
-        // too lazy for progress bar now, will add later
-        await bulkMint(soilData, instructions, network, MNEMONIC)
-        console.log(`mint complete`)
+        instructions = prepareMint(instructions, soilData, metadata, nfts)
+        // const mintedNfts = await mintNfts(soilData, instructions, network, MNEMONIC)
+        // nfts = [...nfts, ...mintedNfts]
+        // saveNftTxData(data, nfts)
     })
 
 program.parse()

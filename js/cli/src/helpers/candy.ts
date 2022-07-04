@@ -2,7 +2,7 @@ import { SoilData } from '../interfaces/config'
 import { Instruction } from '../interfaces/instruction'
 import { Seed } from '../interfaces/seed'
 import chalk from 'chalk'
-import { create_wallet, execute, init, instantiate, upload } from './terra'
+import { create_wallet, execute, init, instantiate, query, upload } from './terra'
 import { AccAddress } from '@terra-money/terra.js'
 
 const candy_codeids = {
@@ -111,4 +111,16 @@ export const setSeed = async (
         }
     })
     return response.txhash
+}
+
+export const info = async (
+    data: SoilData
+) : Promise<any> => {
+    const network = data.network
+    const terra = instantiate(network)
+    const candyAddress = data.addresses['candy']
+    const response = await query(terra, candyAddress, {
+        config: {}
+    })
+    return response
 }

@@ -1,5 +1,5 @@
 import { SoilData } from '../interfaces/config'
-import { Instruction } from '../interfaces/instruction'
+import { Instruction, NftTx } from '../interfaces/instruction'
 import { readSoilData } from './minter'
 import { batchExecute, create_wallet, execute, init, instantiate, upload } from './terra'
 
@@ -43,28 +43,35 @@ export const bulkMint = async(
     instructions: Instruction[],
     network: string,
     mnemonic: string
-): Promise<void> => {
+): Promise<NftTx[]> => {
     const terra = instantiate(network)
     const wallet = create_wallet(terra, mnemonic)
     const candyAddress = data.addresses['collection']
-    let mintInstructions = [...instructions]
-    while(mintInstructions.length > 0) {
-        let tempInstructions = mintInstructions.splice(0, 100)
-        let msgs = tempInstructions.map(inst => {
-            return {
-                mint: {
-                    token_id: inst.tokenId,
-                    owner: inst.owner,
-                    token_uri: '',
-                    extension: {
-                        image: inst.imageUri,
-                        description: inst.description,
-                        name: inst.name,
-                        attributes: inst.attributes
-                    }
+    let nfts:NftTx[] = []
+    let msgs = instructions.map(inst => {
+        return {
+            mint: {
+                token_id: inst.tokenId,
+                owner: inst.owner,
+                token_uri: '',
+                extension: {
+                    image: inst.imageUri,
+                    description: inst.description,
+                    name: inst.name,
+                    attributes: inst.attributes
                 }
             }
+        }
+    })
+    const response = await batchExecute(terra, wallet, candyAddress, msgs)
+    instructions.forEach((inst,index) => {
+        nfts.push({
+            tokenId: inst.tokenId,
+            txhash: response.txhash,
+            height: response.height,
+            msgIndex: index,
+            timestamp: new Date(response.timestamp)
         })
-        await batchExecute(terra, wallet, candyAddress, msgs)
-    }
+    })
+    return nfts
 }

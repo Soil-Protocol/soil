@@ -151,7 +151,7 @@ export const batchExecute = async (
     });
     const response = await terra.tx.broadcast(tx);
     await delay(DELAY_TIME)
-    return response;
+    return response
 }
 
 export const query = async (terra, addr, msg) => {
