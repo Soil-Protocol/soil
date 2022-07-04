@@ -2,8 +2,10 @@ import { SoilData } from '../interfaces/config'
 import { Instruction } from '../interfaces/instruction'
 import { Seed } from '../interfaces/seed'
 import chalk from 'chalk'
-import { create_wallet, execute, init, instantiate, query, upload } from './terra'
+import { batchExecute, create_wallet, execute, init, instantiate, query, upload } from './terra'
 import { AccAddress } from '@terra-money/terra.js'
+import { Whitelist } from '../interfaces/whitelist'
+import { bulkMint } from './nft'
 
 const candy_codeids = {
     'testnet': 1490,
@@ -113,10 +115,125 @@ export const setSeed = async (
     return response.txhash
 }
 
+export const updateWhitelists = async(
+    data: SoilData,
+    whitelists: Whitelist[],
+    network: string,
+    mnemonic: string
+) : Promise<string> => {
+    const terra = instantiate(network)
+    const wallet = create_wallet(terra, mnemonic)
+    const candyAddress = data.addresses['candy']
+    const msgs = whitelists.map(wl => {
+        return {
+            update_whitelist: {
+                register_addr: wl.address,
+                count: Number(wl.limit),
+                round: Number(wl.round)
+            }
+        }
+    })
+    const response = await batchExecute(terra, wallet, candyAddress, msgs)
+    return response.txhash
+}
+
+export const setRound = async (
+    data: SoilData,
+    round: number,
+    network: string,
+    mnemonic: string
+): Promise<string> => {
+    const terra = instantiate(network)
+    const wallet = create_wallet(terra, mnemonic)
+    const candyAddress = data.addresses['candy']
+    const config = await query(terra, candyAddress, {
+        config: {}
+    })
+    const is_open = config.is_open
+    const enable_whitelist = config.enable_whitelist
+    const response = await execute(terra, wallet, candyAddress, {
+        set_config: {
+            is_open,
+            enable_whitelist,
+            round
+        }
+    })
+    return response.txhash
+}
+
+export const setPublicRound = async (
+    data: SoilData,
+    network: string,
+    mnemonic: string
+): Promise<string> => {
+    const terra = instantiate(network)
+    const wallet = create_wallet(terra, mnemonic)
+    const candyAddress = data.addresses['candy']
+    const config = await query(terra, candyAddress, {
+        config: {}
+    })
+    const is_open = config.is_open
+    const round = config.round
+    const response = await execute(terra, wallet, candyAddress, {
+        set_config: {
+            is_open,
+            enable_whitelist: false,
+            round
+        }
+    })
+    return response.txhash
+}
+
+export const openCandyMachine = async (
+    data: SoilData,
+    network: string,
+    mnemonic: string
+): Promise<string> => {
+    const terra = instantiate(network)
+    const wallet = create_wallet(terra, mnemonic)
+    const candyAddress = data.addresses['candy']
+    const config = await query(terra, candyAddress, {
+        config: {}
+    })
+    const enable_whitelist = config.enable_whitelist
+    const round = config.round
+    const response = await execute(terra, wallet, candyAddress, {
+        set_config: {
+            is_open: true,
+            enable_whitelist,
+            round
+        }
+    })
+    return response.txhash
+}
+
+export const closeCandyMachine = async (
+    data: SoilData,
+    network: string,
+    mnemonic: string
+): Promise<string> => {
+    const terra = instantiate(network)
+    const wallet = create_wallet(terra, mnemonic)
+    const candyAddress = data.addresses['candy']
+    const config = await query(terra, candyAddress, {
+        config: {}
+    })
+    const enable_whitelist = config.enable_whitelist
+    const round = config.round
+    const response = await execute(terra, wallet, candyAddress, {
+        set_config: {
+            is_open: false,
+            enable_whitelist,
+            round
+        }
+    })
+    return response.txhash
+}
+
 export const info = async (
-    data: SoilData
+    data: SoilData,
+    network: string
 ) : Promise<any> => {
-    const network = data.network
     const terra = instantiate(network)
     const candyAddress = data.addresses['candy']
     const response = await query(terra, candyAddress, {

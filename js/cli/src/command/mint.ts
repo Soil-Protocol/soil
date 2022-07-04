@@ -1,9 +1,7 @@
 import { Instruction, NftTx } from '../interfaces/instruction'
 import { Presets, SingleBar} from 'cli-progress'
-import { upload } from '../helpers/ipfs'
 import { SoilData } from '../interfaces/config'
 import { bulkMint } from '../helpers/nft'
-import { readNftTxData, saveNftTxData } from '../helpers/minter'
 
 const UPLOAD_BATCH_SIZE = 100
 
@@ -13,6 +11,9 @@ export const mintNfts = async (
     network: string,
     mnemonic: string
 ) => {
+    if (instructions.length <= 0) {
+        return
+    }
     const bar = new SingleBar(null, Presets.shades_classic)
     bar.start(instructions.length, 0)
 
@@ -21,7 +22,7 @@ export const mintNfts = async (
     let nfts:NftTx[] = []
     try {
         while (chunkedInstructions.length > 0) {
-            const tempInsturctions = chunkedInstructions.splice(0, 100)
+            const tempInsturctions = chunkedInstructions.splice(0, UPLOAD_BATCH_SIZE)
             const tempNfts = await bulkMint(data, tempInsturctions, network, mnemonic)
             count += tempInsturctions.length
             nfts = [...nfts, ...tempNfts]

@@ -7,6 +7,7 @@ import { AccAddress } from '@terra-money/terra.js'
 import { Parser } from 'json2csv'
 import { SoilData } from '../interfaces/config'
 import { mintNfts } from '../command/mint'
+import { Whitelist } from '../interfaces/whitelist'
 
 export const parseMasterConfig = async (
     configFile: string
@@ -239,4 +240,22 @@ export const saveNftTxData = (
     const nftTxCsv = parser.parse(nfts)
     fs.writeFileSync(filename, nftTxCsv, 'utf-8')
     return filename
+}
+
+export const readWhitelistData =  async (
+    filename: string
+) : Promise<Whitelist[]> => {
+    let whitelists: Whitelist[] = []
+    const parser = fs
+      .createReadStream(filename)
+      .pipe(parse({
+        columns: true
+      }))
+
+    for await (const record of parser) {
+        whitelists.push({
+            ...record
+          } as Whitelist)
+    }
+    return whitelists
 }
