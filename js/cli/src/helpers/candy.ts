@@ -155,7 +155,7 @@ export const setRound = async (
         set_config: {
             is_open,
             enable_whitelist,
-            round
+            round: Number(round)
         }
     })
     return response.txhash
@@ -163,6 +163,7 @@ export const setRound = async (
 
 export const setPublicRound = async (
     data: SoilData,
+    isPublicRound: boolean,
     network: string,
     mnemonic: string
 ): Promise<string> => {
@@ -177,7 +178,7 @@ export const setPublicRound = async (
     const response = await execute(terra, wallet, candyAddress, {
         set_config: {
             is_open,
-            enable_whitelist: false,
+            enable_whitelist: !isPublicRound,
             round
         }
     })
@@ -240,4 +241,47 @@ export const info = async (
         config: {}
     })
     return response
+}
+
+export const queryWhitelist = async (
+    data: SoilData,
+    address: string,
+    round: number,
+    network: string
+) : Promise<any> => {
+    const terra = instantiate(network)
+    const candyAddress = data.addresses['candy']
+    const response = await query(terra, candyAddress, {
+        whitelist_address: {
+            addr: address,
+            round: Number(round)
+        }
+    })
+    return response
+}
+
+export const checkEligible = async (
+    data: SoilData,
+    address: string,
+    network: string
+) : Promise<any> => {
+    const terra = instantiate(network)
+    const candyAddress = data.addresses['candy']
+    const config = await query(terra, candyAddress, {
+        config: {}
+    })
+    if (config.enable_whitelist) {
+        const response = await query(terra, candyAddress, {
+            whitelist_single: {
+                addr: address
+            }
+        })
+        return response
+    } else {
+        return {
+            addr: address,
+            round: config.round,
+            count: config.total_token_count
+        }
+    }
 }

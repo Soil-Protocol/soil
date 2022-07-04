@@ -6,7 +6,7 @@ import chalk from 'chalk'
 import { exportCsv, parseMasterConfig, readSoilData, readWhitelistData, saveSoilData } from './helpers/minter'
 import { uploadIpfs } from './command/upload'
 import { createCollection } from './helpers/nft'
-import { closeCandyMachine, createCandyMachine, extractSeed, info, openCandyMachine, setPublicRound, setRound, setSeed } from './helpers/candy'
+import { checkEligible, closeCandyMachine, createCandyMachine, extractSeed, info, openCandyMachine, queryWhitelist, setPublicRound, setRound, setSeed } from './helpers/candy'
 import { setWhitelists } from './command/whitelist'
 
 require('dotenv').config()
@@ -70,6 +70,33 @@ program.command('info')
         } = cmd.opts()
         // read config file and nft address to initialize contract
         let soilData = readSoilData(data)
+        const config = await info(soilData, network)
+        console.log(`network: ${chalk.green(network)}`)
+        console.log(`candy machine address: ${chalk.green(soilData.addresses['candy'])}`)
+        console.log(`owner: ${chalk.green(config.owner)}`)
+        console.log(`nft address: ${chalk.green(config.token_addr)}`)
+        const amount = Number(config.mint_asset.amount)
+        if (config.mint_asset.info.native_token) {
+            const denom = config.mint_asset.info.native_token.denom
+            console.log(`mint price: ${chalk.green(amount)} ${chalk.green(denom)}`)
+        } else {
+            console.log(`mint token address: ${config.mint_asset.info.token.contract_addr}`)
+            console.log(`mint price: ${chalk.green(amount)}`)
+        }
+        console.log(`minting fee receiver wallet: ${chalk.green(config.creator)}`)
+        console.log(`whitelist enable: ${chalk.yellow(config.enable_whitelist)}`)
+        if (!config.enable_whitelist) {
+            console.log(`current round: ${chalk.green('public')}`)
+        } else {
+            console.log(`current round: ${chalk.green(config.round)}`)
+        }
+        if (config.is_open) {
+            console.log(`status: ${chalk.green('open')}`)
+        } else {
+            console.log(`status: ${chalk.red('close')}`)
+        }
+        const mintedAmount = Number(config.total_supply) - Number(config.total_token_count)
+        console.log(`total minted: ${chalk.yellow(mintedAmount)} / ${chalk.yellow(config.total_supply)}`)
     })
 
 program.command('set-round')
@@ -89,7 +116,7 @@ program.command('set-round')
         console.log(`update round complete: ${txhash}`)
     })
 
-program.command('set-public-round')
+program.command('open-public-round')
     .description('change candy machine to public round, which disable whitelist')
     .requiredOption('-d, --data <string>', 'data path')
     .requiredOption('-n, --network <string>', 'terra network: localterra/testnet/mainnet')
@@ -97,12 +124,26 @@ program.command('set-public-round')
         const {
             data,
             network,
-            round
         } = cmd.opts()
         // read config file and nft address to initialize contract
         let soilData = readSoilData(data)
-        const txhash = await setPublicRound(soilData, network, MNEMONIC)
-        console.log(`set public round complete: ${txhash}`)
+        const txhash = await setPublicRound(soilData, true, network, MNEMONIC)
+        console.log(`open public round complete: ${txhash}`)
+    })
+
+program.command('close-public-round')
+    .description('change candy machine to public round, which disable whitelist')
+    .requiredOption('-d, --data <string>', 'data path')
+    .requiredOption('-n, --network <string>', 'terra network: localterra/testnet/mainnet')
+    .action(async (directory, cmd) => {
+        const {
+            data,
+            network,
+        } = cmd.opts()
+        // read config file and nft address to initialize contract
+        let soilData = readSoilData(data)
+        const txhash = await setPublicRound(soilData, false, network, MNEMONIC)
+        console.log(`close public round complete: ${txhash}`)
     })
 
 program.command('set-whitelist')
@@ -124,6 +165,54 @@ program.command('set-whitelist')
             console.log('set whitelist complete')
         } catch (err) {
             console.error(err)
+        }
+    })
+
+program.command('get-whitelist')
+    .description('set whitelist on round')
+    .requiredOption('-d, --data <string>', 'data path')
+    .requiredOption('-a, --address <string>', 'address for checking whitelist')
+    .requiredOption('-r, --round <number>', 'round number')
+    .requiredOption('-n, --network <string>', 'terra network: localterra/testnet/mainnet')
+    .action(async (directory, cmd) => {
+        const {
+            data,
+            network,
+            address,
+            round
+        } = cmd.opts()
+        // read config file and nft address to initialize contract
+        let soilData = readSoilData(data)
+        let response = await queryWhitelist(soilData, address, round, network)
+        console.log(`address: ${chalk.green(address)}`)
+        console.log(`round: ${chalk.yellow(round)}`)
+        if (response) {
+            console.log(`total: ${chalk.yellow(response.count)}`)
+        } else {
+            console.log(`total: ${chalk.yellow(0)}`)
+        }
+    })
+
+program.command('eligible')
+    .description('check the eligible for address to mint')
+    .requiredOption('-d, --data <string>', 'data path')
+    .requiredOption('-a, --address <string>', 'address for checking whitelist')
+    .requiredOption('-n, --network <string>', 'terra network: localterra/testnet/mainnet')
+    .action(async (directory, cmd) => {
+        const {
+            data,
+            network,
+            address,
+            round
+        } = cmd.opts()
+        // read config file and nft address to initialize contract
+        let soilData = readSoilData(data)
+        let response = await checkEligible(soilData, address, network)
+        console.log(`address: ${chalk.green(address)}`)
+        if (response) {
+            console.log(`total: ${chalk.yellow(response.count)}`)
+        } else {
+            console.log(`total: ${chalk.yellow(0)}`)
         }
     })
 

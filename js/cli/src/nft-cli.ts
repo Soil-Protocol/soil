@@ -78,11 +78,15 @@ program.command('mint')
         let nfts = await readNftTxData(data)
         let instructions = await parseMasterConfig(config)
         instructions = prepareMint(instructions, soilData, metadata, nfts)
+        if (instructions.length <= 0) {
+            console.log('no new nft to mint, exiting ...')
+            return
+        }
         const mintedNfts = await mintNfts(soilData, instructions, network, MNEMONIC)
         nfts = [...nfts, ...mintedNfts]
         const filename = saveNftTxData(data, nfts)
         if (mintedNfts.length > 0) {
-            console.log(`Mint success ${mintNfts.length} nft`)
+            console.log(`Mint success ${mintedNfts.length} nft`)
             console.log(`Updated minted nfts file: ${filename}`)
         }
     })
