@@ -1,8 +1,6 @@
 import { program } from 'commander'
-import {Presets, SingleBar} from 'cli-progress'
-import { delay } from './helpers/util'
-import prompts from 'prompts'
-import chalk from 'chalk'
+import path from 'path'
+import fs from 'fs'
 import { exportCsv, parseMasterConfig, prepareMint, readNftTxData, readSoilData, saveNftTxData, saveSoilData, verifyMasterConfig } from './helpers/minter'
 import { uploadIpfs } from './command/upload'
 import { createCollection } from './helpers/nft'
@@ -30,13 +28,21 @@ program.command('upload')
             config,
             metadata
         } = cmd.opts()
+        // read data
+        const masterFile = path.join(data, 'master.csv')
+        let existingInstructions = []
+        if (fs.existsSync(masterFile)) {
+            existingInstructions = await parseMasterConfig(masterFile)
+        }
         // parse image
         const instructions = await parseMasterConfig(config)
         verifyMasterConfig(instructions, image, metadata)
         // upload
         const uploadedInstructions = await uploadIpfs(instructions, image, PINATA_API_KEY, PINATA_SECRET_KEY)
         // save to output path
-        const outputFilename = exportCsv(uploadedInstructions, data)
+        let totalInsturctions = []
+        totalInsturctions = [...existingInstructions, ...uploadedInstructions]
+        const outputFilename = exportCsv(totalInsturctions, data)
         console.log(`Updated config file: ${outputFilename}`)
     })
 

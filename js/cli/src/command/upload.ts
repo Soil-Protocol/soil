@@ -2,7 +2,7 @@ import { Instruction } from '../interfaces/instruction'
 import { Presets, SingleBar} from 'cli-progress'
 import { upload } from '../helpers/ipfs'
 
-const UPLOAD_BATCH_SIZE = 100
+const UPLOAD_BATCH_SIZE = 30
 
 export const uploadIpfs = async (
     instructions: Instruction[],
