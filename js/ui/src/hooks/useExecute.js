@@ -4,10 +4,12 @@ import { addresses } from './constants/address'
 import { useCallback } from 'react'
 import axios from 'axios'
 import { Networks } from './constants/network'
+import { useQueryService } from "../hooks/useQuery";
 
 export const useExecuteService = () => {
   const { network } = useWallet()
   const connectedWallet = useConnectedWallet()
+  const { queryCandyRemaining } = useQueryService()
 
   const getGasPrice = useCallback(async (denom) => {
     const response = await axios.get(`${Networks[network.name].fcd}/v1/txs/gas_prices`)
@@ -18,10 +20,12 @@ export const useExecuteService = () => {
   const mint = useCallback(async () => {
     if (!connectedWallet) return
     const networkName = network.name
-    let gasLimit = 500000
-    // const { gasLimit, gasFee } = gas[networkName].methods.candyMachine
     const candyMachineAddr = addresses[networkName].candyMachine
 
+    const candy = await queryCandyRemaining()
+    // now, support only native token
+    const denom = candy.mint_asset.info.native_token.denom
+    const amount = candy.mint_asset.amount
     const response = await connectedWallet.post({
       msgs: [
         new MsgExecuteContract(
@@ -30,7 +34,7 @@ export const useExecuteService = () => {
           {
             mint: {},
           },
-          '1000000uusd',
+          `${amount}${denom}`,
         ),
       ],
     })
