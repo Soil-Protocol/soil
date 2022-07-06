@@ -9,7 +9,7 @@ import { bulkMint } from './nft'
 
 const candy_codeids = {
     'testnet': 1490,
-    'mainnet': 0
+    'mainnet': 194
 }
 
 export const createCandyMachine = async(

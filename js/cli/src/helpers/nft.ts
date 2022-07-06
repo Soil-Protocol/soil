@@ -5,7 +5,7 @@ import { batchExecute, create_wallet, execute, init, instantiate, upload } from 
 
 const cw721_codeids = {
     'testnet': 1434,
-    'mainnet': 0
+    'mainnet': 193
 }
 
 export const createCollection = async(
