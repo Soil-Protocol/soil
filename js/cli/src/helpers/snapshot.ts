@@ -18,15 +18,6 @@ export class NftOwner {
     height?: number
 }
 
-export const findTokenId = async (
-    nftAddress: string,
-    network: string,
-    height?: number
-): Promise<string[]> => {
-
-    return []
-}
-
 export const snapshot = async (
     nftAddress: string,
     tokenIds: string[],
@@ -81,7 +72,7 @@ export const findMarketplaceSeller = async (
     // query based on each marketplace
     const marketplace = MarketplaceAddressMap[originalOwner]
     if (marketplace) {
-        return await queryMarketplaceSeller[marketplace](nftAddress, tokenId, terra, height)
+        return await queryMarketplaceSeller[marketplace](nftAddress, tokenId, originalOwner, terra, height)
     }
     return {
         nftContract: nftAddress,
