@@ -1,10 +1,10 @@
-import {MsgStoreCode, LCDClient, MnemonicKey, MsgInstantiateContract, Coins, MsgExecuteContract, Wallet, MsgSend, Coin, MsgMigrateContract} from '@terra-money/terra.js'
+import { MsgStoreCode, LCDClient, MnemonicKey, MsgInstantiateContract, Coins, MsgExecuteContract, Wallet, MsgSend, Coin, MsgMigrateContract } from '@terra-money/terra.js'
 import * as fs from 'fs'
 import { delay } from './util'
 
 const DELAY_TIME = 2000 // this to prevent unauthorization error
 
-const networks = {
+export const networks = {
     localterra: {
         URL: 'http://localhost:1317',
         chainID: 'localterra',
@@ -22,6 +22,12 @@ const networks = {
     }
 }
 
+export const chainIDMap: Record<string, string> = {
+    'localterra': 'localterra',
+    'pisco-1': 'testnet',
+    'phoenix-1': 'mainnet'
+}
+
 export const instantiate = (network) => {
     return new LCDClient(networks[network])
 }
@@ -37,12 +43,12 @@ export const upload = async (
     terra,
     wallet,
     path,
-):Promise<Number> => { 
+): Promise<Number> => {
     const tx = await wallet.createAndSignTx({
         msgs: [
             new MsgStoreCode(
                 wallet.key.accAddress,
-                fs.readFileSync(path, { encoding: 'base64'})
+                fs.readFileSync(path, { encoding: 'base64' })
             )
         ]
     })
@@ -50,10 +56,10 @@ export const upload = async (
         const response = await terra.tx.broadcast(tx);
         const logs = JSON.parse(response.raw_log)
         let code_id = ''
-        logs.forEach( (log) => {
-            log.events.forEach( (event) => {
-                if(event.type == 'store_code') {
-                    code_id = event.attributes.find( (attribute) => attribute.key == 'code_id').value
+        logs.forEach((log) => {
+            log.events.forEach((event) => {
+                if (event.type == 'store_code') {
+                    code_id = event.attributes.find((attribute) => attribute.key == 'code_id').value
                 }
             })
         })
@@ -74,19 +80,19 @@ export const init = async (
 ) => {
     const msg = new MsgInstantiateContract(wallet.key.accAddress, wallet.key.accAddress, code_id, init_msg, [], label)
     const tx = await wallet.createAndSignTx({
-      msgs: [
-        msg
-      ]
+        msgs: [
+            msg
+        ]
     });
     try {
         const response = await terra.tx.broadcast(tx);
         await delay(DELAY_TIME)
         const logs = JSON.parse(response.raw_log)
         let contract_addr = ''
-        logs.forEach( (log) => {
-            log.events.forEach( (event) => {
-                if(event.type == 'instantiate') {
-                    contract_addr = event.attributes.find( (attribute) => attribute.key == '_contract_address').value
+        logs.forEach((log) => {
+            log.events.forEach((event) => {
+                if (event.type == 'instantiate') {
+                    contract_addr = event.attributes.find((attribute) => attribute.key == '_contract_address').value
                 }
             })
         })
@@ -103,17 +109,17 @@ export const init = async (
 
 export const execute = async (
     terra,
-    wallet:Wallet,
+    wallet: Wallet,
     addr,
     execute_msg,
     coins?,
 ) => {
     let coin = new Coins()
-    if(coins)
+    if (coins)
         coin = Coins.fromString(coins)
     const msgs = [new MsgExecuteContract(wallet.key.accAddress, addr, execute_msg, coin)]
     const tx = await wallet.createAndSignTx({
-      msgs: msgs
+        msgs: msgs
     });
     const response = await terra.tx.broadcast(tx);
     await delay(DELAY_TIME)
@@ -122,11 +128,11 @@ export const execute = async (
 
 export const batchExecuteRaw = async (
     terra,
-    wallet:Wallet,
+    wallet: Wallet,
     msgs: MsgExecuteContract[],
 ) => {
     const tx = await wallet.createAndSignTx({
-      msgs
+        msgs
     });
     const response = await terra.tx.broadcast(tx);
     await delay(DELAY_TIME)
@@ -135,19 +141,19 @@ export const batchExecuteRaw = async (
 
 export const batchExecute = async (
     terra,
-    wallet:Wallet,
+    wallet: Wallet,
     addr,
     execute_msgs,
     coins?,
 ) => {
     let coin = new Coins()
-    if(coins)
+    if (coins)
         coin = Coins.fromString(coins)
     const msgs = execute_msgs.map(execute_msg => {
         return new MsgExecuteContract(wallet.key.accAddress, addr, execute_msg, coin)
     })
     const tx = await wallet.createAndSignTx({
-      msgs: msgs
+        msgs: msgs
     });
     const response = await terra.tx.broadcast(tx);
     await delay(DELAY_TIME)
@@ -155,11 +161,11 @@ export const batchExecute = async (
 }
 
 export const query = async (terra, addr, msg) => {
-    const response = await terra.wasm.contractQuery(addr,msg)
+    const response = await terra.wasm.contractQuery(addr, msg)
     return response
 }
 
 export const queryAtHeight = async (terra, addr, msg, height) => {
-    const response = await terra.wasm.contractQuery(addr,msg, { height })
+    const response = await terra.wasm.contractQuery(addr, msg, { height })
     return response
 }

@@ -3,5 +3,6 @@ build
 output
 *.js
 .env
-.env.*
+.env.
 data
+.DS_Store
