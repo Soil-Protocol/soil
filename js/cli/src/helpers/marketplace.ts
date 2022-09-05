@@ -1,7 +1,4 @@
-import { SoilData } from '../interfaces/config'
-import { Instruction, NftTx } from '../interfaces/instruction'
-import { readSoilData } from './minter'
-import { NftOwner } from './snapshot'
+import { NftOwner } from '../interfaces/nft'
 import { LCDClient } from '@terra-money/terra.js'
 import { queryAtHeight, query } from './terra'
 

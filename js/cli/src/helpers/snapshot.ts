@@ -1,22 +1,12 @@
-import { SoilData } from '../interfaces/config'
-import { Instruction, NftTx } from '../interfaces/instruction'
-import { readSoilData } from './minter'
-import { batchExecute, create_wallet, execute, init, instantiate, upload, queryAtHeight, query, chainIDMap } from './terra'
+import { instantiate, queryAtHeight, query, chainIDMap } from './terra'
 import { LCDClient } from '@terra-money/terra.js'
 import { MarketplaceAddressMap, queryMarketplaceSeller } from './marketplace'
 import fs from 'fs'
 import path from 'path'
 import parse from 'csv-parse'
 import { Parser } from 'json2csv'
-
-export class NftOwner {
-    nftContract: string
-    owner: string
-    tokenId: string
-    createdAt: Date
-    memo?: string
-    height?: number
-}
+import chalk from 'chalk'
+import { NftOwner } from '../interfaces/nft'
 
 export const snapshot = async (
     nftAddress: string,
@@ -91,11 +81,11 @@ export const exportCsv = (
 ): string => {
     const fields = [
         {
-            label: 'nft address',
+            label: 'nft_address',
             value: 'nftContract'
         },
         {
-            label: 'token id',
+            label: 'token_id',
             value: 'tokenId'
         },
         {
@@ -154,4 +144,48 @@ export const exportJson = (
     })
     fs.writeFileSync(outputFilename, JSON.stringify(sortedOwners, null, 2), 'utf-8')
     return outputFilename
+}
+
+export const loadJson = (
+    filePath: string
+): NftOwner[] => {
+    const datas = fs.readFileSync(filePath, 'utf-8').toString()
+    return JSON.parse(datas)
+}
+
+export const loadCsv = async (
+    filePath: string
+): Promise<NftOwner[]> => {
+    const owners: NftOwner[] = []
+    const parser = fs
+        .createReadStream(filePath)
+        .pipe(parse({
+            columns: true
+        }))
+
+    const tokenSet = new Set<string>()
+    for await (const record of parser) {
+
+        // Check token id
+        if (!record.owner) {
+            console.error(chalk.red(`Error: owner not found: ${record.token_id}`))
+            process.exit(-1)
+        }
+
+        // Check duplicate id
+        if (tokenSet.has(record.token_id)) {
+            console.error(chalk.red(`Error: duplicate NFT Token Id: ${record.token_id}`))
+            process.exit(-1)
+        }
+        tokenSet.add(record.token_id)
+
+        owners.push({
+            nftContract: record.nft_address,
+            tokenId: record.token_id,
+            owner: record.owner,
+            height: record.height,
+            memo: record.memo
+        } as NftOwner)
+    }
+    return owners
 }

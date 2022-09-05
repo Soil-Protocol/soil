@@ -1,11 +1,9 @@
 import { program } from 'commander'
-import path from 'path'
-import fs from 'fs'
-import { exportCsv, exportJson } from './helpers/snapshot'
-import { parseMasterConfig, readSoilData } from './helpers/minter'
-import { createCollection } from './helpers/nft'
-import { mintNfts } from './command/mint'
+import { exportCsv, exportJson, loadCsv, loadJson } from './helpers/snapshot'
+import { parseMasterConfig, readSoilData, createMasterConfigFromSnapshot, exportCsv as exportMasterConfigCsv } from './helpers/minter'
 import { holderSnapshot, nftHolderSnapshot } from './command/snapshot'
+import chalk from 'chalk'
+import { NftOwner } from './interfaces/nft'
 
 require('dotenv').config()
 
@@ -98,4 +96,38 @@ program.command('nft-snapshot')
         console.log(`holder output file: ${outputFilename}`)
     })
 
+program.command('create-airdrop')
+    .description('create new master file for new collection with 1:1 airdrop')
+    .requiredOption('-d, --data <string>', 'data path')
+    .requiredOption('-s, --snapshot <string>', 'snapshot holder file')
+    .requiredOption('-f, --format <string>', 'snapshot format file: csv/json')
+    .option('-o, --output <string>', 'output file name')
+    .action(async (directory, cmd) => {
+        const {
+            data,
+            snapshot,
+            format,
+            output
+        } = cmd.opts()
+        // load snapshot file
+        let owners: NftOwner[] = []
+        if (format == 'csv') {
+            owners = await loadCsv(snapshot)
+        } else if (format == 'json') {
+            owners = loadJson(snapshot)
+        } else {
+            console.log(chalk.red(`snapshot format file is not correct, it must be csv or json`))
+        }
+        // create instructions
+        const instructions = createMasterConfigFromSnapshot(owners)
+        // export to csv
+        let outputFilename
+        if (output) {
+            outputFilename = output
+        } else {
+            outputFilename = `new_master`
+        }
+        const outputPath = exportMasterConfigCsv(instructions, data, outputFilename)
+        console.log(`new master config file: ${outputPath}`)
+    })
 program.parse()

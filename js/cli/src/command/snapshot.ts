@@ -1,14 +1,10 @@
-import { Instruction, NftTx } from '../interfaces/instruction'
+import { Instruction } from '../interfaces/instruction'
 import { Presets, SingleBar } from 'cli-progress'
-import { upload } from '../helpers/ipfs'
 import { SoilData } from '../interfaces/config'
-import { bulkMint } from '../helpers/nft'
-import { readNftTxData, saveNftTxData } from '../helpers/minter'
-import { Whitelist } from '../interfaces/whitelist'
-import { updateWhitelists } from '../helpers/candy'
-import { NftOwner, snapshot } from '../helpers/snapshot'
+import { snapshot } from '../helpers/snapshot'
 import { queryAtHeight, instantiate, query } from '../helpers/terra'
 import { delay } from '../helpers/util'
+import { NftOwner } from '../interfaces/nft'
 
 export const nftHolderSnapshot = async (
     soilData: SoilData,

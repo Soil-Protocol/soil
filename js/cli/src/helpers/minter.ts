@@ -6,27 +6,27 @@ import parse from 'csv-parse'
 import { AccAddress } from '@terra-money/terra.js'
 import { Parser } from 'json2csv'
 import { SoilData } from '../interfaces/config'
-import { mintNfts } from '../command/mint'
 import { Whitelist } from '../interfaces/whitelist'
+import { NftOwner } from '../interfaces/nft'
 
 export const parseMasterConfig = async (
     configFile: string
-) : Promise<Instruction[]> => {
+): Promise<Instruction[]> => {
     const instructions = []
 
     const parser = fs
-      .createReadStream(configFile)
-      .pipe(parse({
-        columns: true
-      }))
+        .createReadStream(configFile)
+        .pipe(parse({
+            columns: true
+        }))
 
-      const tokenSet = new Set<string>()
-      for await (const record of parser) {
-  
+    const tokenSet = new Set<string>()
+    for await (const record of parser) {
+
         if (record.metadata_filename == '') {
-          record.metadata_filename = null
+            record.metadata_filename = null
         }
-  
+
         // Check token id
         if (!record.id) {
             console.error(chalk.red(`Error: NFT Token Id not found: ${record.id}`))
@@ -42,21 +42,21 @@ export const parseMasterConfig = async (
 
         // Check name exists
         if (!record.name) {
-          console.error(chalk.red(`Error: NFT Name not found: ${record.id}`))
-          process.exit(-1)
+            console.error(chalk.red(`Error: NFT Name not found: ${record.id}`))
+            process.exit(-1)
         }
-  
+
         instructions.push({
-          tokenId: record.id,
-          name: record.name,
-          imageFilename: record.image_filename,
-          metadataFilename: record.metadata_filename,
-          owner: record.owner,
-          imageUri: record.ipfs
+            tokenId: record.id,
+            name: record.name,
+            imageFilename: record.image_filename,
+            metadataFilename: record.metadata_filename,
+            owner: record.owner,
+            imageUri: record.ipfs
         } as Instruction)
-      }
-  
-      return instructions
+    }
+
+    return instructions
 }
 
 export const verifyMasterConfig = (
@@ -64,17 +64,17 @@ export const verifyMasterConfig = (
     imagePath: string,
     metadataPath: string = ''
 ) => {
-    instructions.forEach( (inst, index) => {
+    instructions.forEach((inst, index) => {
         // Check image file is ipfs path otherwise file should exist
         if (inst.imageUri && !inst.imageUri.startsWith('ipfs://') && !fs.existsSync(`${path.join(imagePath, inst.imageFilename)}`)) {
-          console.error(chalk.red(`Error: Image file not found nor an IPFS path at index: ${index} , tokenId: ${inst.tokenId}`))
-          process.exit(-1)
+            console.error(chalk.red(`Error: Image file not found nor an IPFS path at index: ${index} , tokenId: ${inst.tokenId}`))
+            process.exit(-1)
         }
-  
+
         // Check metadata file exists
         if (metadataPath != '' && inst.metadataFilename && !fs.existsSync(`${path.join(metadataPath, inst.metadataFilename)}`)) {
-          console.error(chalk.red(`Error: Metadata file not found at index: ${index} , tokenId: ${inst.tokenId}`))
-          process.exit(-1)
+            console.error(chalk.red(`Error: Metadata file not found at index: ${index} , tokenId: ${inst.tokenId}`))
+            process.exit(-1)
         }
     })
 }
@@ -84,29 +84,29 @@ export const prepareMint = (
     data: SoilData,
     metadataPath: string = '',
     nfts: NftTx[]
-) : Instruction[] => {
+): Instruction[] => {
     // filter minted instruction
     let mintedNftSet = new Set<string>()
     nfts.forEach(n => mintedNftSet.add(n.tokenId))
     let tempInsturctions = instructions.filter(inst => !mintedNftSet.has(inst.tokenId))
     //
     let mintInstructions = []
-    tempInsturctions.forEach( (inst, index) => {
+    tempInsturctions.forEach((inst, index) => {
         // Check image file is ipfs path
         if (!inst.imageUri) {
-          console.error(chalk.red(`Error: Image file not found nor an IPFS path at index: ${index} , tokenId: ${inst.tokenId}`))
-          process.exit(-1)
+            console.error(chalk.red(`Error: Image file not found nor an IPFS path at index: ${index} , tokenId: ${inst.tokenId}`))
+            process.exit(-1)
         }
         // Check image file is ipfs path otherwise file should exist
         if (!inst.imageUri.startsWith('ipfs://')) {
-          console.error(chalk.red(`Error: Image file not found nor an IPFS path at index: ${index} , tokenId: ${inst.tokenId}`))
-          process.exit(-1)
+            console.error(chalk.red(`Error: Image file not found nor an IPFS path at index: ${index} , tokenId: ${inst.tokenId}`))
+            process.exit(-1)
         }
-  
+
         // Check metadata file exists
         if (metadataPath != '' && inst.metadataFilename && !fs.existsSync(`${path.join(metadataPath, inst.metadataFilename)}`)) {
-          console.error(chalk.red(`Error: Metadata file not found at index: ${index} , tokenId: ${inst.tokenId}`))
-          process.exit(-1)
+            console.error(chalk.red(`Error: Metadata file not found at index: ${index} , tokenId: ${inst.tokenId}`))
+            process.exit(-1)
         }
 
         const mintInstruction = inst
@@ -116,7 +116,7 @@ export const prepareMint = (
             mintInstruction.description = metadatas.description || ''
             mintInstruction.attributes = metadatas.attributes || []
         }
-        
+
         // load address
         let owner
         if (data.addresses[inst.owner]) {
@@ -136,8 +136,9 @@ export const prepareMint = (
 
 export const exportCsv = (
     instructions: Instruction[],
-    outputPath: string
-) : string => {
+    outputPath: string,
+    outputFilename?: string
+): string => {
     const fields = [
         {
             label: 'id',
@@ -170,14 +171,18 @@ export const exportCsv = (
     if (!fs.existsSync(outputPath)) {
         fs.mkdirSync(outputPath)
     }
-    const outputFilename = path.join(outputPath, 'master.csv')
+    if (!outputFilename) {
+        outputFilename = path.join(outputPath, 'master.csv')
+    } else {
+        outputFilename = path.join(outputPath, `${outputFilename}.csv`)
+    }
     fs.writeFileSync(outputFilename, configCsv)
     return outputFilename
 }
 
 export const readSoilData = (
     outputPath: string
-) : SoilData => {
+): SoilData => {
     const configFilename = path.join(outputPath, 'data.json')
     if (!outputPath || !fs.existsSync(configFilename)) {
         return {
@@ -195,7 +200,7 @@ export const readSoilData = (
 export const saveSoilData = (
     outputPath: string,
     config: SoilData
-) : string => {
+): string => {
     const filename = path.join(outputPath, 'data.json')
     fs.writeFileSync(filename, JSON.stringify(config, null, 2), 'utf-8')
     return filename
@@ -211,15 +216,15 @@ export const readNftTxData = async (
     }
 
     const parser = fs
-      .createReadStream(nftTxFilename)
-      .pipe(parse({
-        columns: true
-      }))
+        .createReadStream(nftTxFilename)
+        .pipe(parse({
+            columns: true
+        }))
 
     for await (const record of parser) {
         nfts.push({
             ...record
-          } as NftTx)
+        } as NftTx)
     }
     return nfts
 }
@@ -242,20 +247,35 @@ export const saveNftTxData = (
     return filename
 }
 
-export const readWhitelistData =  async (
+export const readWhitelistData = async (
     filename: string
-) : Promise<Whitelist[]> => {
+): Promise<Whitelist[]> => {
     let whitelists: Whitelist[] = []
     const parser = fs
-      .createReadStream(filename)
-      .pipe(parse({
-        columns: true
-      }))
+        .createReadStream(filename)
+        .pipe(parse({
+            columns: true
+        }))
 
     for await (const record of parser) {
         whitelists.push({
             ...record
-          } as Whitelist)
+        } as Whitelist)
     }
     return whitelists
+}
+
+export const createMasterConfigFromSnapshot = (
+    owners: NftOwner[]
+): Instruction[] => {
+    const instructions: Instruction[] = owners.map(ow => {
+        return {
+            tokenId: ow.tokenId,
+            imageFilename: '',
+            metadataFilename: `${ow.tokenId}.json`,
+            name: `#${ow.tokenId}`,
+            owner: ow.owner,
+        }
+    })
+    return instructions
 }
