@@ -4,8 +4,9 @@ import { SoilData } from '../interfaces/config'
 import { snapshot } from '../helpers/snapshot'
 import { queryAtHeight, instantiate, query } from '../helpers/terra'
 import { delay } from '../helpers/util'
-import { NftOwner } from '../interfaces/nft'
+import { Nft, Collection, NftStandard } from '../interfaces/nft'
 import { LCDClient } from '@terra-money/terra.js'
+import { findNftStandard, getNftInfos as getNftInfosFromChain } from '../helpers/nft'
 
 export const getNftTokenIds = async (
     nftAddress: string,
@@ -66,4 +67,57 @@ export const getNftTokenIds = async (
         await delay(1000)
     }
     return tokenIds
+}
+
+export const getNftInfos = async (
+    nftAddress: string,
+    terra: LCDClient,
+    height?: number,
+    nftStandard: NftStandard = NftStandard.Cw721Standard
+): Promise<Collection> => {
+    // get collection information
+    let collectionResponse: any
+    if (height) {
+        collectionResponse = await queryAtHeight(terra, nftAddress, {
+            contract_info: {}
+        }, height)
+    } else {
+        collectionResponse = await query(terra, nftAddress, {
+            contract_info: {}
+        })
+    }
+    const collectionName = collectionResponse.name
+    const collectionSymbol = collectionResponse.symbol
+    // get token id first
+    const tokenIds = await getNftTokenIds(nftAddress, terra, height)
+    if (tokenIds.length <= 0) {
+        console.log(`no nft, exiting...`)
+    }
+    // get nft information
+    const bar = new SingleBar(null, Presets.shades_classic)
+    console.log('finding nft information...')
+    let nfts: Nft[] = []
+    let ids: string[] = [...tokenIds]
+    try {
+        bar.start(tokenIds.length, 0)
+        while (ids.length > 0) {
+            const tmepIds = ids.splice(0, 30)
+            const tempNfts = await getNftInfosFromChain(nftAddress, tmepIds, terra, height, nftStandard)
+            nfts = [...nfts, ...tempNfts]
+            bar.update(nfts.length)
+            await delay(2000)
+        }
+        bar.stop()
+    } catch (ex) {
+        console.error(ex)
+        bar.stop()
+    } finally {
+        const collection = {
+            nftContract: nftAddress,
+            name: collectionName,
+            symbol: collectionSymbol,
+            nfts
+        }
+        return collection
+    }
 }

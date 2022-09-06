@@ -1,8 +1,12 @@
-import { NftOwner } from '../interfaces/nft'
+import { Nft, NftOwner, NftStandard, NftTrait } from '../interfaces/nft'
 import { LCDClient } from '@terra-money/terra.js'
 import { queryAtHeight, query } from './terra'
+import { extractQmHash } from './nft'
+import axios from 'axios'
 
-export type MapperFnSignature = (nftAddress: string, tokenId: string, originalOwner: string, terra: any, height?: number) => Promise<NftOwner>
+export type MarketplaceMapperFnSignature = (nftAddress: string, tokenId: string, originalOwner: string, terra: any, height?: number) => Promise<NftOwner>
+
+export type NftInfoMapperFnSignature = (nftAddress: string, tokenId: string, rawData: any) => Nft
 
 export enum Marketplace {
     Knowhere = 'knowhere',
@@ -19,7 +23,7 @@ const KNOWHERE_ADDRESS = 'terra16t9fg9x7pssm39fc90yx508cpw4tv33wfr7sprf6mn3qk84w
 const TALIS_MARKETPLACE_ADDRESS = 'terra1cr6apzg5f3jlqntvykrhehg06668cx7jjy2sh7u7u50f79z48nrshpkxuv'
 const TALIS_AUCTION_ADDRESS = 'terra1ek8ms3uew0rku4wcrqwvgl3hmgrw6jpn2phxv39y66jthjn4vraqww5gpk'
 
-export const queryKnowhereSeller: MapperFnSignature = async (nftAddress: string, tokenId: string, originalOwner: string, terra: LCDClient, height?: number): Promise<NftOwner> => {
+export const queryKnowhereSeller: MarketplaceMapperFnSignature = async (nftAddress: string, tokenId: string, originalOwner: string, terra: LCDClient, height?: number): Promise<NftOwner> => {
     let owner = originalOwner
     let response: any
     if (height) {
@@ -51,7 +55,7 @@ export const queryKnowhereSeller: MapperFnSignature = async (nftAddress: string,
     }
 }
 
-export const queryTalisSeller: MapperFnSignature = async (nftAddress: string, tokenId: string, originalOwner: string, terra: LCDClient, height?: number): Promise<NftOwner> => {
+export const queryTalisSeller: MarketplaceMapperFnSignature = async (nftAddress: string, tokenId: string, originalOwner: string, terra: LCDClient, height?: number): Promise<NftOwner> => {
     let owner = originalOwner
     if (originalOwner == TALIS_MARKETPLACE_ADDRESS) {
         if (height) {
@@ -100,7 +104,84 @@ export const queryTalisSeller: MapperFnSignature = async (nftAddress: string, to
     }
 }
 
-export const queryMarketplaceSeller: Record<Marketplace, MapperFnSignature> = {
+export const queryMarketplaceSeller: Record<Marketplace, MarketplaceMapperFnSignature> = {
     [Marketplace.Knowhere]: queryKnowhereSeller,
     [Marketplace.Talis]: queryTalisSeller
+}
+
+export const mapCw721Standard: NftInfoMapperFnSignature = (
+    nftContract: string,
+    tokenId: string,
+    rawData: any,
+): Nft => {
+    let image = rawData.extension?.image || ''
+    return {
+        nftContract,
+        tokenId,
+        name: rawData.extension?.name || rawData.name,
+        description: rawData.extension?.description,
+        animationUrl: rawData.extension?.animation_url,
+        videoUrl: rawData.extension?.animation_url,
+        image,
+        imageData: rawData.extension?.image_data || rawData.image,
+        attributes: rawData.extension?.attributes || [],
+    }
+}
+
+export const mapTalisStandard: NftInfoMapperFnSignature = (
+    nftContract: string,
+    tokenId: string,
+    rawData: any
+): Nft => {
+    let keys = Object.keys(rawData)
+    let attributes: NftTrait[] = []
+    let name = ''
+    let description = ''
+    let image = ''
+    keys.forEach(key => {
+        let value = rawData[key]
+        if (key == 'title') {
+            name = value
+        } else if (key == 'description') {
+            description = value
+        } else if (key == 'media') {
+            const ipfsHash = extractQmHash(value)
+            const fileName = value.substring(value.lastIndexOf('/') + 1)
+            if (ipfsHash) {
+                image = `ipfs://${ipfsHash}/${fileName}`
+            }
+        } else {
+            attributes.push({
+                trait_type: key,
+                value
+            })
+        }
+    })
+    return {
+        nftContract,
+        tokenId,
+        name,
+        description,
+        image,
+        attributes
+    }
+}
+
+export const getSpecificMetadata = async (
+    nftContract: string,
+    tokenId: string,
+    standardType: NftStandard,
+    rawData: any
+): Promise<any> => {
+    if (standardType == NftStandard.TalisStandard) {
+        const url = rawData.token_uri
+        const metadata = await axios.get(url)
+        return metadata.data
+    }
+    return rawData
+}
+
+export const nftDataMapper: Record<NftStandard, NftInfoMapperFnSignature> = {
+    [NftStandard.Cw721Standard]: mapCw721Standard,
+    [NftStandard.TalisStandard]: mapTalisStandard
 }

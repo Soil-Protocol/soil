@@ -83,7 +83,8 @@ export const prepareMint = (
     instructions: Instruction[],
     data: SoilData,
     metadataPath: string = '',
-    nfts: NftTx[]
+    nfts: NftTx[],
+    ignoreIpfs: boolean = false
 ): Instruction[] => {
     // filter minted instruction
     let mintedNftSet = new Set<string>()
@@ -93,13 +94,13 @@ export const prepareMint = (
     let mintInstructions = []
     tempInsturctions.forEach((inst, index) => {
         // Check image file is ipfs path
-        if (!inst.imageUri) {
-            console.error(chalk.red(`Error: Image file not found nor an IPFS path at index: ${index} , tokenId: ${inst.tokenId}`))
+        if (!ignoreIpfs && !inst.imageUri) {
+            console.error(chalk.red(`Error: an IPFS path not found at index: ${index} , tokenId: ${inst.tokenId}`))
             process.exit(-1)
         }
         // Check image file is ipfs path otherwise file should exist
-        if (!inst.imageUri.startsWith('ipfs://')) {
-            console.error(chalk.red(`Error: Image file not found nor an IPFS path at index: ${index} , tokenId: ${inst.tokenId}`))
+        if (!ignoreIpfs && !inst.imageUri.startsWith('ipfs://')) {
+            console.error(chalk.red(`Error: an IPFS path not found at index: ${index} , tokenId: ${inst.tokenId}`))
             process.exit(-1)
         }
 

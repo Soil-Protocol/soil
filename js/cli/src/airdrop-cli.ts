@@ -56,7 +56,7 @@ program.command('snapshot')
         console.log(`holder output file: ${outputFilename}`)
     })
 
-program.command('nft-snapshot')
+program.command('snapshot-onchain')
     .description('snapshot nft holder from contract address')
     .requiredOption('-d, --data <string>', 'data path')
     .requiredOption('-c, --contract <string>', 'nft contract address')

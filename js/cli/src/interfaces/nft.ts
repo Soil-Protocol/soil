@@ -34,16 +34,18 @@ export interface NftRarity {
 }
 
 export enum RarityModel {
-    TraitRarity,
-    StatisticalRarity,
-    RarityScore
+    TraitRarity = 'trait_rarity',
+    MeanTraitRarity = 'mean_trait_rarity',
+    StatisticalRarity = 'statistical_rarity',
+    RarityScore = 'rarity_score'
 }
 
 export interface Collection {
     nftContract: string
     name: string
     symbol: string
-    collectionAttributes: CollectionAttribute[]
+    nfts?: Nft[]
+    collectionAttributes?: CollectionAttribute[]
 }
 
 export interface CollectionAttribute {
@@ -55,4 +57,18 @@ export interface CollectionAttributeTrait {
     value: string
     share: number
     count: number
+}
+
+export enum NftStandard {
+    Cw721Standard = 'Cw721Standard',
+    TalisStandard = 'TalisStandard'
+}
+
+export interface NftRank {
+    tokenId: string,
+    name: string,
+    traitRarity: number,
+    meanTraitRarity: number,
+    statisticalRarity: number,
+    rarityScore: number
 }
