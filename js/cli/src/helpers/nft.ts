@@ -194,6 +194,18 @@ export const getNftInfos = async (
     return nfts
 }
 
+export const sampleNftTokenId = async (
+    nftAddress: string,
+    terra: LCDClient
+): Promise<string> => {
+    const ids = await query(terra, nftAddress, {
+        all_tokens: {
+            limit: 1,
+        }
+    })
+    return ids.tokens[0]
+}
+
 export const findNftStandard = async (
     nftAddress: string,
     tokenId: String,

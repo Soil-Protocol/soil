@@ -174,7 +174,6 @@ export const calculatRarityScore = (
         rarityScoreMap[nft.tokenId] = totalScore
     })
     const sortedRarityScore = [...rarityScores].sort((a, b) => a - b).reverse()
-    console.log(sortedRarityScore)
     const rarityScoreRankMap: Record<number, number> = {}
     let count = 1
     sortedRarityScore.forEach(score => {

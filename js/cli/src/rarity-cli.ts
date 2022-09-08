@@ -3,10 +3,10 @@ import { exportCsv } from './helpers/rarity'
 import { parseMasterConfig, prepareMint, readSoilData } from './helpers/minter'
 import { getNftInfos } from './command/nft'
 import { instantiate } from './helpers/terra'
-import { calculateTrait, exportNftJson, findNftStandard, loadNFtJson, parseNftFromMasterConfig } from './helpers/nft'
+import { calculateTrait, exportNftJson, findNftStandard, loadNFtJson, parseNftFromMasterConfig, sampleNftTokenId } from './helpers/nft'
 import { calculateRarity } from './helpers/rarity'
 import { NftRank, RarityModel } from './interfaces/nft'
-import path from 'path'
+import fs from 'fs'
 
 require('dotenv').config()
 
@@ -67,7 +67,8 @@ program.command('calculate-trait-onchain')
             blockHeight = Number(height)
         }
         const terra = instantiate(network)
-        const nftStandard = await findNftStandard(contract, "1", terra)
+        const sampleTokenId = await sampleNftTokenId(contract, terra)
+        const nftStandard = await findNftStandard(contract, sampleTokenId, terra)
         const collection = await getNftInfos(contract, terra, blockHeight, nftStandard)
         const calculatedCollection = calculateTrait(collection)
         let filename = output
@@ -92,6 +93,9 @@ program.command('calculate-rarity')
         const collection = loadNFtJson(input)
         console.log('calculate rarity score...')
         const calculatedCollection = calculateRarity(collection)
+        // update collection
+        fs.writeFileSync(input, JSON.stringify(calculatedCollection, null, 2), 'utf-8')
+        console.log(`updated collection file: ${input}`)
         // export to csv for sorting
         const ranks: NftRank[] = calculatedCollection.nfts.map(nft => {
             return {
